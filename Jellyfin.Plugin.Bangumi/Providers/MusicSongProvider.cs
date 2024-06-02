@@ -78,8 +78,11 @@ public class MusicSongProvider : IRemoteMetadataProvider<Audio, SongInfo>, IHasO
         var fileName = Path.GetFileName(info.Path);
         if (string.IsNullOrEmpty(fileName))
             return null;
+        var parent = _libraryManager.FindByPath(info.Path, false);
+        if (parent == null)
+            return null;
 
-        var album = _libraryManager.FindByPath(info.Path, false).FindParent<MusicAlbum>();
+        var album = parent.FindParent<MusicAlbum>();
         if (album is null)
             return null;
 
@@ -101,7 +104,7 @@ public class MusicSongProvider : IRemoteMetadataProvider<Audio, SongInfo>, IHasO
                 return song;
         }
 
-        NoBangumiId:
+    NoBangumiId:
         var episodeListData = await _api.GetSubjectEpisodeList(albumId, null, songIndex, token);
         if (episodeListData == null)
             return null;

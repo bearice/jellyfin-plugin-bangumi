@@ -98,7 +98,11 @@ public class EpisodeProvider : IRemoteMetadataProvider<Episode, EpisodeInfo>, IH
         result.Item.Overview = string.IsNullOrEmpty(episode.Description) ? null : episode.Description;
         result.Item.ParentIndexNumber = info.ParentIndexNumber ?? 1;
 
-        var parent = _libraryManager.FindByPath(Path.GetDirectoryName(info.Path), true);
+        var parentPath = Path.GetDirectoryName(info.Path);
+        if (parentPath == null)
+            return result;
+
+        var parent = _libraryManager.FindByPath(parentPath, true);
         if (IsSpecial(info.Path, false) || episode.Type == EpisodeType.Special || info.ParentIndexNumber == 0)
         {
             result.Item.ParentIndexNumber = 0;
@@ -165,8 +169,13 @@ public class EpisodeProvider : IRemoteMetadataProvider<Episode, EpisodeInfo>, IH
         var type = IsSpecial(info.Path) ? EpisodeType.Special : GuessEpisodeTypeFromFileName(fileName);
         var seriesId = localConfiguration.Id;
 
-        var parent = _libraryManager.FindByPath(Path.GetDirectoryName(info.Path), true);
-        if (parent is Season)
+        var parentPath = Path.GetDirectoryName(info.Path);
+        if (parentPath == null)
+        {
+            return null;
+        }
+
+        var parent = _libraryManager.FindByPath(parentPath, true); if (parent is Season)
             if (int.TryParse(parent.ProviderIds.GetValueOrDefault(Constants.ProviderName), out var seasonId))
                 seriesId = seasonId;
 
@@ -206,7 +215,7 @@ public class EpisodeProvider : IRemoteMetadataProvider<Episode, EpisodeInfo>, IH
                 return episode;
         }
 
-        SkipBangumiId:
+    SkipBangumiId:
         var episodeListData = await _api.GetSubjectEpisodeList(seriesId, type, episodeIndex.Value, token);
         if (episodeListData == null)
             return null;

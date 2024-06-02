@@ -46,8 +46,13 @@ public class SeasonProvider : IRemoteMetadataProvider<Season, SeasonInfo>, IHasO
         };
         var localConfiguration = await LocalConfiguration.ForPath(info.Path);
 
-        var parent = _libraryManager.FindByPath(Path.GetDirectoryName(info.Path), true);
+        var parentPath = Path.GetDirectoryName(info.Path);
+        if (parentPath == null)
+        {
+            _log.LogWarning("No parent path found for {} {}", info.Name, info.Path);
+        }
 
+        var parent = parentPath == null ? null : _libraryManager.FindByPath(parentPath, true);
         var subjectId = 0;
         if (localConfiguration.Id != 0)
         {
@@ -65,7 +70,7 @@ public class SeasonProvider : IRemoteMetadataProvider<Season, SeasonInfo>, IHasO
         {
             subjectId = subjectIdFromParent;
         }
-        else if (parent is Series series)
+        else if (parent != null && parent is Series series)
         {
             var previousSeason = series.Children
                 // Search "Season 2" for "Season 1" and "Season 2 Part X"  
